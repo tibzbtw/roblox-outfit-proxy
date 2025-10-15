@@ -1,26 +1,26 @@
 const express = require('express');
-   const axios = require('axios');
-   const cors = require('cors');
+const axios = require('axios');
+const cors = require('cors');
 
-   const app = express();
-   const PORT = process.env.PORT || 3000;
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-   app.use(cors());
+app.use(cors());
 
-   app.get('/', (req, res) => {
-     res.json({
-       status: 'online',
-       message: 'Roblox Outfit Proxy Server',
-       endpoints: {
-         outfits: '/api/outfits?userId=USER_ID'
-       }
-     });
-   });
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    message: 'Roblox Outfit Proxy Server',
+    endpoints: {
+      outfits: '/api/outfits?userId=USER_ID'
+    }
+  });
+});
 
-  app.get('/api/outfits', async (req, res) => {
+app.get('/api/outfits', async (req, res) => {
   try {
     const userId = req.query.userId;
-
+    
     if (!userId) {
       return res.status(400).json({ 
         error: 'Missing userId parameter',
@@ -31,6 +31,7 @@ const express = require('express');
     console.log(`Fetching outfits for userId: ${userId}`);
 
     const url = `https://avatar.roblox.com/v1/users/${userId}/outfits?page=1&itemsPerPage=50`;
+    
     const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Roblox/WinInet',
@@ -39,19 +40,12 @@ const express = require('express');
       timeout: 10000
     });
 
-    // ✅ Keep full outfit data (id, name, and type)
-    const allOutfits = response.data.data;
-
-    // ✅ Filter only actual saved outfits
-    const filtered = allOutfits.filter(o => o.type === "Outfit");
-
-    // ✅ Map only the fields your GUI needs
-    const outfits = filtered.map(o => ({
-      Id: o.id,
-      Name: o.name
+    const outfits = response.data.data.map(outfit => ({
+      Id: outfit.id,
+      Name: outfit.name
     }));
 
-    console.log(`Found ${outfits.length} saved outfits for user ${userId}`);
+    console.log(`Found ${outfits.length} outfits for user ${userId}`);
 
     res.json({
       success: true,
@@ -62,7 +56,7 @@ const express = require('express');
 
   } catch (error) {
     console.error('Error fetching outfits:', error.message);
-
+    
     res.status(500).json({
       success: false,
       error: error.message,
@@ -71,7 +65,6 @@ const express = require('express');
   }
 });
 
-
-   app.listen(PORT, () => {
-     console.log(`🚀 Proxy server running on port ${PORT}`);
-   });
+app.listen(PORT, () => {
+  console.log(`🚀 Proxy server running on port ${PORT}`);
+});
