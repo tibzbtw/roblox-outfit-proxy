@@ -17,53 +17,59 @@ const express = require('express');
      });
    });
 
-   app.get('/api/outfits', async (req, res) => {
-     try {
-       const userId = req.query.userId;
-       
-       if (!userId) {
-         return res.status(400).json({ 
-           error: 'Missing userId parameter',
-           example: '/api/outfits?userId=123456'
-         });
-       }
+  app.get('/api/outfits', async (req, res) => {
+  try {
+    const userId = req.query.userId;
 
-       console.log(`Fetching outfits for userId: ${userId}`);
+    if (!userId) {
+      return res.status(400).json({ 
+        error: 'Missing userId parameter',
+        example: '/api/outfits?userId=123456'
+      });
+    }
 
-       const url = `https://avatar.roblox.com/v1/users/${userId}/outfits?page=1&itemsPerPage=50`;
-       
-       const response = await axios.get(url, {
-         headers: {
-           'User-Agent': 'Roblox/WinInet',
-           'Accept': 'application/json'
-         },
-         timeout: 10000
-       });
+    console.log(`Fetching outfits for userId: ${userId}`);
 
-       const outfits = response.data.data.map(outfit => ({
-         Id: outfit.id,
-         Name: outfit.name
-       }));
+    const url = `https://avatar.roblox.com/v1/users/${userId}/outfits?page=1&itemsPerPage=50`;
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Roblox/WinInet',
+        'Accept': 'application/json'
+      },
+      timeout: 10000
+    });
 
-       console.log(`Found ${outfits.length} outfits for user ${userId}`);
+    // ✅ Keep full outfit data (id, name, and type)
+    const allOutfits = response.data.data;
 
-       res.json({
-         success: true,
-         userId: userId,
-         count: outfits.length,
-         outfits: outfits
-       });
+    // ✅ Filter only actual saved outfits
+    const filtered = allOutfits.filter(o => o.type === "Outfit");
 
-     } catch (error) {
-       console.error('Error fetching outfits:', error.message);
-       
-       res.status(500).json({
-         success: false,
-         error: error.message,
-         details: error.response?.data || 'No additional details'
-       });
-     }
-   });
+    // ✅ Map only the fields your GUI needs
+    const outfits = filtered.map(o => ({
+      Id: o.id,
+      Name: o.name
+    }));
+
+    console.log(`Found ${outfits.length} saved outfits for user ${userId}`);
+
+    res.json({
+      success: true,
+      userId: userId,
+      count: outfits.length,
+      outfits: outfits
+    });
+
+  } catch (error) {
+    console.error('Error fetching outfits:', error.message);
+
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.response?.data || 'No additional details'
+    });
+  }
+});
 
    app.listen(PORT, () => {
      console.log(`🚀 Proxy server running on port ${PORT}`);
